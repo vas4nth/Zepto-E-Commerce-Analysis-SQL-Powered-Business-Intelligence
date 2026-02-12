@@ -1,0 +1,122 @@
+-- Drop table if it exists
+DROP TABLE IF EXISTS zepto;
+
+-- Create table with correct data types
+CREATE TABLE zepto(
+    sku_id SERIAL PRIMARY KEY,
+    category VARCHAR(200),
+    name VARCHAR(300),
+    mrp INTEGER,
+    discountpercent DECIMAL(5,2),
+    availablequantity INTEGER,
+    discountSellingPrice INTEGER,  -- Note: column name matches CSV header
+    weightInGms INTEGER,           -- Note: column name matches CSV header
+    outOfStock VARCHAR(10),        -- Temporary as VARCHAR to avoid boolean issues
+    quantity INTEGER
+);
+
+SELECT COUNT(*) FROM zepto;
+
+
+SELECT * FROM zepto
+LIMIT 10;
+
+SELECT * FROM zepto
+WHERE name is NULL
+OR
+category is NULL
+OR
+mrp is NULL
+OR
+discountpercent is NULL
+OR
+availablequantity is NULL
+OR
+discountSellingPrice is NULL
+OR
+weightInGms is NULL
+OR
+outOfStock is NULL
+OR
+quantity is NULL;
+
+
+SELECT DISTINCT category
+FROM zepto
+ORDER BY category;
+
+
+SELECT name,COUNT(sku_id) as "Number of SKUs"
+FROM zepto
+GROUP BY name
+HAVING count (sku_id) > 1
+ORDER BY count (sku_id) DESC;
+
+
+
+-- DATA CLEANING
+
+
+select * from zepto
+where mrp = 0
+or discountSellingPrice = 0;
+
+
+delete from zepto
+where mrp = 0;
+
+
+--convert paise into rupees
+
+update zepto
+set mrp = mrp/100.0,
+discountSellingPrice = discountSellingPrice/100.0;
+
+select mrp,discountSellingPrice from zepto;
+
+
+--BUSINESS INSIGHT 
+
+
+--TOP 10 BEST SELLING PRODUCT
+select distinct name,mrp,discountpercent
+from zepto
+order by discountpercent desc
+limit 10;
+
+
+--PRODUCT WITH HIGH MRP BUT OUT OF STOCK
+select distinct name,mrp
+from zepto
+where outOfStock = 'true' and mrp > 300
+order by mrp desc;
+
+
+--ESTIMATE REVENUE FOR EACH CATEGORY
+select category ,
+sum(discountSellingPrice * availableQuantity) as total_revenue
+from zepto
+group by category
+order by total_revenue;
+
+
+--MRP GREATER THAN 500 RUPEES AND DISCOUNT IS LESS THAN 10%
+select distinct name,mrp,discountPercent
+from zepto
+where mrp > 500 and discountPercent < 10
+order by mrp desc, discountPercent desc;
+
+--TOP 5 CATEGORY OFFERING THE HIGHEST AVERAGE DISCOUNT PERCENTAGE
+select category ,
+round(avg(discountPercent),2) as avg_discount
+from zepto
+group by category
+order by avg_discount desc
+limit 5;
+
+--TOTAL INVENTORY WEIGHT PER CATEGORY
+select category,
+sum(weightInGms * availableQuantity) as total_weight
+from zepto
+group by category
+order by total_weight;
